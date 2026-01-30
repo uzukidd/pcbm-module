@@ -14,6 +14,28 @@ def unpack_batch(batch):
         raise ValueError()
 
 
+# @torch.no_grad()
+# def get_projections(args, backbone, posthoc_layer, loader):
+#     all_projs, all_embs, all_lbls = None, None, None
+#     for batch in tqdm(loader):
+#         batch_X, batch_Y = unpack_batch(batch)
+#         batch_X = batch_X.to(args.device)
+#         if "clip" in args.backbone_name:
+#             embeddings = backbone.encode_as_embedding(batch_X).detach().float()
+#         else:
+#             embeddings = backbone(batch_X).detach()
+#         projs = posthoc_layer(embeddings).detach().cpu().numpy()
+#         embeddings = embeddings.detach().cpu().numpy()
+#         if all_embs is None:
+#             all_embs = embeddings
+#             all_projs = projs
+#             all_lbls = batch_Y.numpy()
+#         else:
+#             all_embs = np.concatenate([all_embs, embeddings], axis=0)
+#             all_projs = np.concatenate([all_projs, projs], axis=0)
+#             all_lbls = np.concatenate([all_lbls, batch_Y.numpy()], axis=0)
+#     return all_embs, all_projs, all_lbls
+
 @torch.no_grad()
 def get_projections(args, backbone, posthoc_layer, loader):
     all_projs, all_embs, all_lbls = None, None, None
@@ -21,10 +43,10 @@ def get_projections(args, backbone, posthoc_layer, loader):
         batch_X, batch_Y = unpack_batch(batch)
         batch_X = batch_X.to(args.device)
         if "clip" in args.backbone_name:
-            embeddings = backbone.encode_image(batch_X).detach().float()
+            embeddings = backbone.encode_as_embedding(batch_X).detach().float()
         else:
-            embeddings = backbone(batch_X).detach()
-        projs = posthoc_layer.compute_dist(embeddings).detach().cpu().numpy()
+            embeddings = backbone.encode_as_embedding(batch_X).detach()
+        projs = backbone.encode_as_concepts(batch_X).detach().cpu().numpy()
         embeddings = embeddings.detach().cpu().numpy()
         if all_embs is None:
             all_embs = embeddings
@@ -35,7 +57,6 @@ def get_projections(args, backbone, posthoc_layer, loader):
             all_projs = np.concatenate([all_projs, projs], axis=0)
             all_lbls = np.concatenate([all_lbls, batch_Y.numpy()], axis=0)
     return all_embs, all_projs, all_lbls
-
 
 class EmbDataset(Dataset):
     def __init__(self, data, target):
